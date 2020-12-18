@@ -27,6 +27,14 @@ tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "1.8"
 }
 
+kotlinter {
+    ignoreFailures = false
+    indentSize = 4
+    reporters = arrayOf("checkstyle", "plain")
+    experimentalRules = false
+    disabledRules = Array(1) { "no-wildcard-imports" }
+}
+
 val mainLocation = "net.nergi.rpneval.MainKt"
 
 val jar by tasks.getting(Jar::class) {

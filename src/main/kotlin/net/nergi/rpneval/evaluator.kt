@@ -4,19 +4,7 @@ import java.lang.Math.cbrt
 import java.lang.Math.pow
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.math.acos
-import kotlin.math.acosh
-import kotlin.math.asin
-import kotlin.math.asinh
-import kotlin.math.atan
-import kotlin.math.atanh
-import kotlin.math.cos
-import kotlin.math.cosh
-import kotlin.math.sin
-import kotlin.math.sinh
-import kotlin.math.sqrt
-import kotlin.math.tan
-import kotlin.math.tanh
+import kotlin.math.*
 
 typealias BinApp = (BigDecimal, BigDecimal) -> BigDecimal
 
