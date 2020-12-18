@@ -32,7 +32,7 @@ kotlinter {
     indentSize = 4
     reporters = arrayOf("checkstyle", "plain")
     experimentalRules = false
-    disabledRules = Array(1) { "no-wildcard-imports" }
+    disabledRules = arrayOf("no-wildcard-imports")
 }
 
 val mainLocation = "net.nergi.rpneval.MainKt"
