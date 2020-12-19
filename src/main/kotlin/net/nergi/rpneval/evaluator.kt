@@ -4,6 +4,7 @@ import java.lang.Math.cbrt
 import java.lang.Math.pow
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.util.Scanner
 import kotlin.math.*
 
 typealias BinApp = (BigDecimal, BigDecimal) -> BigDecimal
@@ -71,12 +72,22 @@ private class TkOper(cnt: String) : Token(cnt) {
     override fun toString(): String = "TkOper $cnt"
 }
 
+private class TkVar(id: String, cnt: String) : Token(cnt) {
+    val name = id
+
+    override fun toString(): String = name
+}
+
 private open class EvToken {
     override fun toString(): String = "Undefined Token"
 }
 
 private class EvVal(val bgDec: BigDecimal) : EvToken() {
     override fun toString(): String = bgDec.toPlainString()
+}
+
+private class EvVar(val name: String, val bgDec: BigDecimal): EvToken() {
+    override fun toString(): String = name
 }
 
 private class EvBinApp(val op: TkOper, val v1: EvToken, val v2: EvToken) : EvToken() {
@@ -87,10 +98,14 @@ private class EvUnApp(val op: TkOper, val v1: EvToken) : EvToken() {
     override fun toString(): String = "(${op.cnt} $v1)"
 }
 
+val variables: MutableMap<String, String> = mutableMapOf()
+
 private fun tokenise(str: String): List<Token> {
     return if (str.isEmpty()) {
         emptyList()
     } else {
+        val scn = Scanner(System.`in`)
+
         when {
             str[0].isDigit() -> {
                 val pred = { chr: Char -> chr.isDigit() || chr == '.' }
@@ -98,7 +113,34 @@ private fun tokenise(str: String): List<Token> {
             }
             str[0].isLetter() -> {
                 val pred = Char::isLetter
-                listOf(TkOper(str.takeWhile(pred).toLowerCase())) + tokenise(str.dropWhile(pred))
+                val nextId = str.takeWhile(pred)
+
+                if (nextId in precedences.keys) {
+                    listOf(TkOper(nextId)) + tokenise(str.dropWhile(pred))
+                } else {
+                    if (nextId in variables.keys) {
+                        val inp = variables[nextId]!!
+                        listOf(TkVar(nextId, inp)) + tokenise(str.dropWhile(pred))
+                    } else {
+                        var inp: String
+                        do {
+                            println("Please type in a value for \"$nextId\":")
+                            inp = scn.nextLine().filter { !it.isWhitespace() }
+                            print('\n')
+
+                            if (inp.isNotBlank() && inp.all { it.isDigit() || it == '.' }) {
+                                break
+                            } else {
+                                print("Invalid number. ")
+                                inp = ""
+                            }
+                        } while (inp.isBlank())
+
+                        variables[nextId] = inp
+                        listOf(TkVar(nextId, inp)) + tokenise(str.dropWhile(pred))
+                    }
+
+                }
             }
             "${str[0]}" in precedences.keys -> listOf(TkOper("${str[0]}")) + tokenise(str.drop(1))
             else -> tokenise(str.drop(1))
@@ -170,6 +212,10 @@ private fun parse(lst: List<Token>, precTable: PrecedenceTable = precedences): E
                     exprStk.add(0, EvVal(cur.toBigDecimal()))
                     innerParse(lst.drop(1), exprStk, opStk)
                 }
+                is TkVar -> {
+                    exprStk.add(0, EvVar(cur.name, cur.cnt.toBigDecimal()))
+                    innerParse(lst.drop(1), exprStk, opStk)
+                }
                 is TkOper -> {
                     if (cur.cnt !in listOf("(", ")")) {
                         when {
@@ -227,6 +273,7 @@ private fun parse(lst: List<Token>, precTable: PrecedenceTable = precedences): E
 private fun eval(ev: EvToken): BigDecimal {
     return when (ev) {
         is EvVal -> ev.bgDec
+        is EvVar -> ev.bgDec
         is EvBinApp -> {
             val func = ev.op.getBinOper()!!
             func(eval(ev.v1), eval(ev.v2))
@@ -242,6 +289,7 @@ private fun eval(ev: EvToken): BigDecimal {
 private fun toStringAsRPN(expr: EvToken): String {
     return when (expr) {
         is EvVal -> expr.bgDec.toString()
+        is EvVar -> expr.toString()
         is EvBinApp -> "${toStringAsRPN(expr.v1)} ${toStringAsRPN(expr.v2)} ${expr.op.cnt}"
         is EvUnApp -> "${toStringAsRPN(expr.v1)} ${expr.op.cnt}"
         else -> "Undefined Expression!"
